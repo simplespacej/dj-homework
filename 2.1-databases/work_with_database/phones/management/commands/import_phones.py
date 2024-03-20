@@ -1,26 +1,28 @@
-# import_phones.py
 import csv
-from django.core.management.base import BaseCommand
-from phones.models import Phone
 from datetime import datetime
 
-class Command(BaseCommand):
-    help = 'Import phones from a CSV file into the Phone model'
+from django.core.management.base import BaseCommand
+from phones.models import Phone
 
+class Command(BaseCommand):
     def add_arguments(self, parser):
-        parser.add_argument('csv_file_path', type=str, help='The path to the CSV file to import.')
+        pass
 
     def handle(self, *args, **options):
-        with open(options['csv_file_path'], newline='', encoding='utf-8') as csvfile:
-            reader = csv.DictReader(csvfile, delimiter=';')
-            for row in reader:
-                phone = Phone(
-                    id=row['id'],
-                    name=row['name'],
-                    price=row['price'],
-                    image=row['image'],
-                    release_date=datetime.strptime(row['release_date'], '%Y-%m-%d').date(),
-                    lte_exists=row['lte_exists'] == 'True',
-                )
-                phone.save()
-                self.stdout.write(self.style.SUCCESS(f"Phone '{phone.name}' imported successfully."))
+        with open('phones.csv', 'r') as file:
+            phones = list(csv.DictReader(file, delimiter=';'))
+
+        for phone in phones:
+            phone_id = int(phone['id'])
+            name = phone['name']
+            image = phone['image']
+            price = float(phone['price'])
+            release_date = datetime.strptime(phone['release_date'], '%Y-%m-%d').date()
+            lte_exists = phone['lte_exists'] == 'True'
+            
+            Phone.objects.update_or_create(
+                id=phone_id,
+                defaults={'name': name, 'image': image, 'price': price, 'release_date': release_date, 'lte_exists': lte_exists}
+            )
+
+        self.stdout.write(self.style.SUCCESS('Импорт телефонов успешно выполнен!'))
